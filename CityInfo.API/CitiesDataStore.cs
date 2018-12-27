@@ -46,13 +46,13 @@ namespace CityInfo.API
                     {
                         new PointOfInterestDto()
                         {
-                            Id = 1,
+                            Id = 3,
                             Name = "Anakena",
                             Description = "The most visited beach located in Rapa Nui."
                         },
                         new PointOfInterestDto()
                         {
-                            Id = 2,
+                            Id = 4,
                             Name = "Rano Raraku",
                             Description = "The most visited volcano located in Rapa Nui."
                         }

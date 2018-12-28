@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CityInfo.API.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CityInfo.API.Controllers
@@ -99,6 +100,46 @@ namespace CityInfo.API.Controllers
 
             pointOfInterestFromStore.Name = pointOfInterest.Name;
             pointOfInterestFromStore.Description = pointOfInterest.Description;
+
+            return NoContent();
+        }
+
+        [HttpPatch("{cityId}/pointsofinterest/{id}")]
+        public IActionResult PartiallyUpdatePointOfInterest(int cityId, int id,
+            [FromBody] JsonPatchDocument<PointOfInterestForUpdateDto> patchDocument)
+        {
+            if (patchDocument == null)
+                return BadRequest();
+
+            var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
+            if (city == null)
+                return NotFound();
+
+            var pointsOfInterestFromStore = city.PointsOfInterest.FirstOrDefault(c => c.Id == id);
+            if (pointsOfInterestFromStore == null)
+                return NotFound();
+
+            var pointOfInterestToPatch = new PointOfInterestForUpdateDto()
+            {
+                Name = pointsOfInterestFromStore.Name,
+                Description = pointsOfInterestFromStore.Description
+            };
+
+            patchDocument.ApplyTo(pointOfInterestToPatch, ModelState);
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (pointOfInterestToPatch.Description == pointOfInterestToPatch.Name)
+                ModelState.AddModelError("Description", "The provided description should be different from the name.");
+
+            TryValidateModel(pointOfInterestToPatch);
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            pointsOfInterestFromStore.Name = pointOfInterestToPatch.Name;
+            pointsOfInterestFromStore.Description = pointOfInterestToPatch.Description;
 
             return NoContent();
         }

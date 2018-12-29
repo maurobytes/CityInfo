@@ -134,19 +134,14 @@ namespace CityInfo.API.Controllers
             if (patchDocument == null)
                 return BadRequest();
 
-            var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
-            if (city == null)
+            if (!_cityInfoRepository.CityExists(cityId))
+                return BadRequest();
+
+            var pointOfInterestEntity = _cityInfoRepository.GetPointOfInterestForCity(cityId, id);
+            if (pointOfInterestEntity == null)
                 return NotFound();
 
-            var pointsOfInterestFromStore = city.PointsOfInterest.FirstOrDefault(c => c.Id == id);
-            if (pointsOfInterestFromStore == null)
-                return NotFound();
-
-            var pointOfInterestToPatch = new PointOfInterestForUpdateDto()
-            {
-                Name = pointsOfInterestFromStore.Name,
-                Description = pointsOfInterestFromStore.Description
-            };
+            var pointOfInterestToPatch = Mapper.Map<PointOfInterestForUpdateDto>(pointOfInterestEntity);
 
             patchDocument.ApplyTo(pointOfInterestToPatch, ModelState);
 
@@ -161,8 +156,10 @@ namespace CityInfo.API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            pointsOfInterestFromStore.Name = pointOfInterestToPatch.Name;
-            pointsOfInterestFromStore.Description = pointOfInterestToPatch.Description;
+            Mapper.Map(pointOfInterestToPatch, pointOfInterestEntity);
+
+            if(!_cityInfoRepository.Save())
+                return StatusCode(500, "An error ocurred while handling your request");
 
             return NoContent();
         }
